@@ -1,0 +1,1091 @@
+[
+  {
+    "id": "tab_cardio",
+    "type": "tab",
+    "label": "Mini-projet Cardio",
+    "disabled": false,
+    "info": "Nœud principal (capteur SEN0518) + nœud de pilotage (LED/bouton) + alarme"
+  },
+  {
+    "id": "broker_cardio",
+    "type": "mqtt-broker",
+    "name": "Broker Raspberry Pi",
+    "broker": "172.18.32.39",
+    "port": "1883",
+    "clientid": "",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthPayload": "",
+    "closeTopic": "",
+    "closeQos": "0",
+    "closePayload": "",
+    "willTopic": "",
+    "willQos": "0",
+    "willPayload": ""
+  },
+  {
+    "id": "uitab_cardio",
+    "type": "ui_tab",
+    "name": "Moniteur cardiaque",
+    "icon": "dashboard",
+    "order": 1,
+    "disabled": false,
+    "hidden": false
+  },
+  {
+    "id": "grp_patient",
+    "type": "ui_group",
+    "name": "Patient",
+    "tab": "uitab_cardio",
+    "order": 1,
+    "disp": true,
+    "width": "6",
+    "collapse": false,
+    "className": ""
+  },
+  {
+    "id": "grp_alarme",
+    "type": "ui_group",
+    "name": "Alarme",
+    "tab": "uitab_cardio",
+    "order": 2,
+    "disp": true,
+    "width": "6",
+    "collapse": false,
+    "className": ""
+  },
+  {
+    "id": "grp_pilotage",
+    "type": "ui_group",
+    "name": "Pilotage",
+    "tab": "uitab_cardio",
+    "order": 3,
+    "disp": true,
+    "width": "6",
+    "collapse": false,
+    "className": ""
+  },
+  {
+    "id": "in_data",
+    "type": "mqtt in",
+    "name": "projet/principal/data",
+    "topic": "projet/principal/data",
+    "qos": "0",
+    "datatype": "json",
+    "broker": "broker_cardio",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 170,
+    "y": 100,
+    "wires": [
+      [
+        "fn_split",
+        "fn_etat",
+        "fn_alarme",
+        "dbg"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "in_online",
+    "type": "mqtt in",
+    "name": "projet/principal/online",
+    "topic": "projet/principal/online",
+    "qos": "0",
+    "datatype": "utf8",
+    "broker": "broker_cardio",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 170,
+    "y": 260,
+    "wires": [
+      [
+        "fn_online",
+        "fn_alarme"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "in_btn",
+    "type": "mqtt in",
+    "name": "esp32/button1",
+    "topic": "esp32/button1",
+    "qos": "0",
+    "datatype": "utf8",
+    "broker": "broker_cardio",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 150,
+    "y": 340,
+    "wires": [
+      [
+        "fn_btn",
+        "fn_alarme"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "fn_split",
+    "type": "function",
+    "name": "Extraire BPM / SpO2",
+    "func": "const d = msg.payload;\nconst out = [null, null, null];\nif (d.capteur && d.bpm > 0) {\n    out[0] = {topic: 'BPM', payload: d.bpm};\n    out[1] = {payload: d.bpm};\n}\nif (d.capteur && d.spo2 > 0) out[2] = {topic: 'SpO2', payload: d.spo2};\nreturn out;",
+    "outputs": 3,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 470,
+    "y": 80,
+    "wires": [
+      [
+        "chart_bpm"
+      ],
+      [
+        "gauge_bpm"
+      ],
+      [
+        "chart_spo2"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "gauge_bpm",
+    "type": "ui_gauge",
+    "name": "Jauge BPM",
+    "group": "grp_patient",
+    "order": 1,
+    "width": 0,
+    "height": 0,
+    "gtype": "gage",
+    "title": "Fréquence cardiaque",
+    "label": "BPM",
+    "format": "{{value}}",
+    "min": "40",
+    "max": "200",
+    "colors": [
+      "#00b500",
+      "#e6e600",
+      "#ca3838"
+    ],
+    "seg1": "100",
+    "seg2": "130",
+    "diff": false,
+    "className": "",
+    "x": 760,
+    "y": 60,
+    "wires": [],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "chart_bpm",
+    "type": "ui_chart",
+    "name": "BPM (5 dernières min)",
+    "group": "grp_patient",
+    "order": 2,
+    "width": 0,
+    "height": 0,
+    "label": "BPM (5 dernières min)",
+    "chartType": "line",
+    "legend": "false",
+    "xformat": "HH:mm:ss",
+    "interpolate": "linear",
+    "nodata": "En attente de données...",
+    "dot": false,
+    "ymin": "40",
+    "ymax": "200",
+    "removeOlder": "5",
+    "removeOlderPoints": "",
+    "removeOlderUnit": "60",
+    "cutout": 0,
+    "useOneColor": false,
+    "useUTC": false,
+    "colors": [
+      "#e31a1c",
+      "#aec7e8",
+      "#ff7f0e",
+      "#2ca02c",
+      "#98df8a",
+      "#d62728",
+      "#ff9896",
+      "#9467bd",
+      "#c5b0d5"
+    ],
+    "outputs": 1,
+    "useDifferentColor": false,
+    "className": "",
+    "x": 780,
+    "y": 20,
+    "wires": [
+      []
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "chart_spo2",
+    "type": "ui_chart",
+    "name": "SpO2 % (5 dernières min)",
+    "group": "grp_patient",
+    "order": 3,
+    "width": 0,
+    "height": 0,
+    "label": "SpO2 % (5 dernières min)",
+    "chartType": "line",
+    "legend": "false",
+    "xformat": "HH:mm:ss",
+    "interpolate": "linear",
+    "nodata": "En attente de données...",
+    "dot": false,
+    "ymin": "80",
+    "ymax": "100",
+    "removeOlder": "5",
+    "removeOlderPoints": "",
+    "removeOlderUnit": "60",
+    "cutout": 0,
+    "useOneColor": false,
+    "useUTC": false,
+    "colors": [
+      "#1f77b4",
+      "#aec7e8",
+      "#ff7f0e",
+      "#2ca02c",
+      "#98df8a",
+      "#d62728",
+      "#ff9896",
+      "#9467bd",
+      "#c5b0d5"
+    ],
+    "outputs": 1,
+    "useDifferentColor": false,
+    "className": "",
+    "x": 780,
+    "y": 100,
+    "wires": [
+      []
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "fn_etat",
+    "type": "function",
+    "name": "Texte d'état",
+    "func": "const t = {\n  0: '✅ Fonctionnement nominal',\n  1: '📶 WiFi perdu',\n  2: '🔌 Capteur débranché',\n  3: '☝️ Pas de mesure (posez le doigt)'\n};\nreturn {payload: t[msg.payload.code] || ('Code ' + msg.payload.code)};",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 450,
+    "y": 180,
+    "wires": [
+      [
+        "txt_etat"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "txt_etat",
+    "type": "ui_text",
+    "group": "grp_patient",
+    "order": 4,
+    "width": 0,
+    "height": 0,
+    "name": "État du capteur",
+    "label": "État du capteur",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "className": "",
+    "style": false,
+    "font": "",
+    "fontSize": "",
+    "color": "#000000",
+    "x": 760,
+    "y": 180,
+    "wires": [],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "fn_online",
+    "type": "function",
+    "name": "En ligne ?",
+    "func": "return {payload: msg.payload === 'online' ? '🟢 En ligne' : '🔴 HORS LIGNE'};",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 260,
+    "wires": [
+      [
+        "txt_online"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "txt_online",
+    "type": "ui_text",
+    "group": "grp_patient",
+    "order": 6,
+    "width": 0,
+    "height": 0,
+    "name": "Nœud principal",
+    "label": "Nœud principal",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "className": "",
+    "style": false,
+    "font": "",
+    "fontSize": "",
+    "color": "#000000",
+    "x": 760,
+    "y": 260,
+    "wires": [],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "fn_btn",
+    "type": "function",
+    "name": "Texte bouton",
+    "func": "const v = String(msg.payload).toLowerCase();\nreturn {payload: v === 'down' ? '🔴 APPUYÉ' : '⚪ RELÂCHÉ'};",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 340,
+    "wires": [
+      [
+        "txt_btn"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "txt_btn",
+    "type": "ui_text",
+    "group": "grp_pilotage",
+    "order": 2,
+    "width": 0,
+    "height": 0,
+    "name": "Bouton physique",
+    "label": "Bouton physique",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "className": "",
+    "style": false,
+    "font": "",
+    "fontSize": "",
+    "color": "#000000",
+    "x": 760,
+    "y": 340,
+    "wires": [],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "sw_led",
+    "type": "ui_switch",
+    "name": "LED (manuel)",
+    "label": "LED de pilotage",
+    "tooltip": "",
+    "group": "grp_pilotage",
+    "order": 1,
+    "width": 0,
+    "height": 0,
+    "passthru": true,
+    "decouple": "false",
+    "topic": "led",
+    "topicType": "str",
+    "style": "",
+    "onvalue": "on",
+    "onvalueType": "str",
+    "onicon": "",
+    "oncolor": "",
+    "offvalue": "off",
+    "offvalueType": "str",
+    "officon": "",
+    "offcolor": "",
+    "animate": false,
+    "className": "",
+    "x": 160,
+    "y": 420,
+    "wires": [
+      [
+        "fn_alarme"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "inj_seuil",
+    "type": "inject",
+    "name": "Seuil initial = 100",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "1",
+    "topic": "seuil",
+    "payload": "100",
+    "payloadType": "num",
+    "x": 170,
+    "y": 480,
+    "wires": [
+      [
+        "sl_seuil"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "inj_surv",
+    "type": "inject",
+    "name": "Surveillance ON",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "1",
+    "topic": "surveillance",
+    "payload": "true",
+    "payloadType": "bool",
+    "x": 160,
+    "y": 540,
+    "wires": [
+      [
+        "sw_surv"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "sl_seuil",
+    "type": "ui_slider",
+    "name": "Seuil BPM",
+    "label": "Seuil d'alarme (BPM)",
+    "tooltip": "",
+    "group": "grp_alarme",
+    "order": 2,
+    "width": 0,
+    "height": 0,
+    "passthru": true,
+    "outs": "end",
+    "topic": "seuil",
+    "topicType": "str",
+    "min": "50",
+    "max": "180",
+    "step": "1",
+    "className": "",
+    "x": 380,
+    "y": 480,
+    "wires": [
+      [
+        "fn_alarme",
+        "out_seuil"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "out_seuil",
+    "type": "mqtt out",
+    "name": "Seuil -> principal",
+    "topic": "projet/principal/seuil",
+    "qos": "0",
+    "retain": "true",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "broker_cardio",
+    "x": 620,
+    "y": 500,
+    "wires": [],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "sw_surv",
+    "type": "ui_switch",
+    "name": "Surveillance",
+    "label": "Surveillance active",
+    "tooltip": "",
+    "group": "grp_alarme",
+    "order": 3,
+    "width": 0,
+    "height": 0,
+    "passthru": true,
+    "decouple": "false",
+    "topic": "surveillance",
+    "topicType": "str",
+    "style": "",
+    "onvalue": "true",
+    "onvalueType": "bool",
+    "onicon": "",
+    "oncolor": "",
+    "offvalue": "false",
+    "offvalueType": "bool",
+    "officon": "",
+    "offcolor": "",
+    "animate": false,
+    "className": "",
+    "x": 380,
+    "y": 540,
+    "wires": [
+      [
+        "fn_alarme"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "btn_ack",
+    "type": "ui_button",
+    "name": "Acquitter",
+    "group": "grp_alarme",
+    "order": 4,
+    "width": 0,
+    "height": 0,
+    "passthru": false,
+    "label": "Acquitter l'alarme",
+    "tooltip": "",
+    "color": "",
+    "bgcolor": "",
+    "className": "",
+    "icon": "",
+    "payload": "1",
+    "payloadType": "str",
+    "topic": "acquit",
+    "topicType": "str",
+    "x": 370,
+    "y": 600,
+    "wires": [
+      [
+        "fn_alarme"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "fn_alarme",
+    "type": "function",
+    "name": "Logique d'alarme",
+    "func": "// =====================================================\n// LOGIQUE D'ALARME + COMMANDE DE LA LED\n//  Causes : principal hors ligne / capteur débranché / BPM > seuil\n//  Bouton physique (\"down\") ou bouton dashboard = ACQUITTER\n//  LED = ON si alarme, sinon état choisi par l'interrupteur du dashboard\n// =====================================================\nlet st = context.get('st') || {\n    seuil: 100, surveillance: true, online: true, data: null,\n    ackKey: '', alarme: false, ledManuel: 'off', ledEnvoyee: ''\n};\n\nswitch (msg.topic) {\n    case 'projet/principal/data':   st.data = msg.payload; break;\n    case 'projet/principal/online': st.online = (msg.payload === 'online'); break;\n    case 'seuil':                   st.seuil = Number(msg.payload); break;\n    case 'surveillance':            st.surveillance = (msg.payload === true); break;\n    case 'led':                     st.ledManuel = msg.payload; break;\n}\n\n// --- Cause de l'alarme\nlet key = '', texte = '';\nconst d = st.data;\nif (!st.online) {\n    key = 'offline'; texte = 'Nœud principal HORS LIGNE';\n} else if (d && d.capteur === false) {\n    key = 'capteur'; texte = 'Capteur cardiaque DÉBRANCHÉ';\n} else if (d && d.bpm > 0 && d.bpm > st.seuil) {\n    key = 'bpm'; texte = 'BPM trop élevé : ' + d.bpm + ' > ' + st.seuil;\n}\n\n// --- Acquittement (bouton physique appuyé ou bouton du dashboard)\nconst appui = (msg.topic === 'esp32/button1' && String(msg.payload).toLowerCase() === 'down');\nif ((appui || msg.topic === 'acquit') && key !== '') st.ackKey = key;\nif (key === '') st.ackKey = '';            // problème réglé -> réarmement\n\nconst alarme = st.surveillance && key !== '' && st.ackKey !== key;\n\n// --- LED : alarme prioritaire, sinon commande manuelle\nconst led = alarme ? 'on' : st.ledManuel;\nlet outLed = null;\nif (led !== st.ledEnvoyee) { outLed = {payload: led}; st.ledEnvoyee = led; }\n\nlet outPopup = null;\nif (alarme && !st.alarme) outPopup = {topic: '🚨 ALARME', payload: texte};\nst.alarme = alarme;\ncontext.set('st', st);\n\nlet etat;\nif (!st.surveillance)  etat = '⏸️ Surveillance désactivée';\nelse if (alarme)       etat = '🚨 ' + texte;\nelse if (key !== '')   etat = '🟠 Acquittée : ' + texte;\nelse                   etat = '✅ Normal';\n\nnode.status({fill: alarme ? 'red' : 'green', shape: 'dot', text: alarme ? texte : 'OK'});\nreturn [outLed, {payload: etat}, outPopup];",
+    "outputs": 3,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 700,
+    "y": 440,
+    "wires": [
+      [
+        "out_led"
+      ],
+      [
+        "txt_alarme",
+        "son_fn"
+      ],
+      [
+        "toast"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "out_led",
+    "type": "mqtt out",
+    "name": "esp32/output (LED)",
+    "topic": "esp32/output",
+    "qos": "0",
+    "retain": "true",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "broker_cardio",
+    "x": 980,
+    "y": 400,
+    "wires": [],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "txt_alarme",
+    "type": "ui_text",
+    "group": "grp_alarme",
+    "order": 1,
+    "width": 0,
+    "height": 0,
+    "name": "État de l'alarme",
+    "label": "État de l'alarme",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "className": "",
+    "style": false,
+    "font": "",
+    "fontSize": "",
+    "color": "#000000",
+    "x": 970,
+    "y": 440,
+    "wires": [],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "toast",
+    "type": "ui_toast",
+    "position": "top right",
+    "displayTime": "5",
+    "highlight": "red",
+    "sendall": true,
+    "outputs": 0,
+    "ok": "OK",
+    "cancel": "",
+    "raw": false,
+    "className": "",
+    "topic": "",
+    "name": "Popup alarme",
+    "x": 960,
+    "y": 480,
+    "wires": [],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "dbg",
+    "type": "debug",
+    "name": "debug données",
+    "active": false,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 440,
+    "y": 40,
+    "wires": [],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "rec_comment",
+    "type": "comment",
+    "name": "ENREGISTREMENT : appui long (≥1,5 s) sur le bouton = démarrer / arrêter",
+    "info": "Les mesures sont gardées en mémoire (contexte global) et téléchargeables en CSV sur http://IP:1880/cardio.csv",
+    "x": 330,
+    "y": 860,
+    "wires": [],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "rec_in_btn",
+    "type": "mqtt in",
+    "name": "esp32/button1 (REC)",
+    "topic": "esp32/button1",
+    "qos": "0",
+    "datatype": "utf8",
+    "broker": "broker_cardio",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 170,
+    "y": 920,
+    "wires": [
+      [
+        "rec_fn_btn"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "rec_fn_btn",
+    "type": "function",
+    "name": "Appui long = REC ON/OFF",
+    "func": "// Mesure la durée de l'appui : down -> up\nconst v = String(msg.payload).toLowerCase();\nconst now = Date.now();\nif (v === 'down') { context.set('t0', now); return null; }\nconst t0 = context.get('t0');\ncontext.set('t0', null);\nif (v !== 'up' || !t0) return null;\nif (now - t0 < 1500) return null;          // appui court = acquittement (géré par la logique d'alarme)\n\nlet rec = global.get('rec') || { actif: false, lignes: [] };\nrec.actif = !rec.actif;\nglobal.set('rec', rec);\n\nconst n = rec.lignes.length;\nconst txt = rec.actif ? '🔴 REC en cours (' + n + ' mesures)' : '⏹️ Arrêté (' + n + ' mesures)';\nreturn [ {payload: txt},\n         {topic: '💾 Enregistrement', payload: rec.actif ? 'Démarré (appui long)' : 'Arrêté : ' + n + ' mesures'} ];",
+    "outputs": 2,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 920,
+    "wires": [
+      [
+        "rec_txt"
+      ],
+      [
+        "rec_toast"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "rec_in_data",
+    "type": "mqtt in",
+    "name": "projet/principal/data (REC)",
+    "topic": "projet/principal/data",
+    "qos": "0",
+    "datatype": "json",
+    "broker": "broker_cardio",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 190,
+    "y": 980,
+    "wires": [
+      [
+        "rec_fn_data"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "rec_fn_data",
+    "type": "function",
+    "name": "Enregistrer la mesure",
+    "func": "let rec = global.get('rec') || { actif: false, lignes: [] };\nif (!rec.actif) return null;\nconst d = msg.payload;\nif (!d.capteur || d.bpm <= 0) return null;   // on n'enregistre que les vraies mesures\n\nconst now = new Date();\nrec.lignes.push({\n    date: now.toLocaleDateString('fr-FR') + ' ' + now.toLocaleTimeString('fr-FR'),\n    bpm: d.bpm, spo2: d.spo2, seuil: d.seuil, code: d.code\n});\nif (rec.lignes.length > 10000) rec.lignes.shift();\nglobal.set('rec', rec);\nreturn { payload: '🔴 REC en cours (' + rec.lignes.length + ' mesures)' };",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 450,
+    "y": 980,
+    "wires": [
+      [
+        "rec_txt"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "rec_btn_clear",
+    "type": "ui_button",
+    "name": "Effacer",
+    "group": "grp_pilotage",
+    "order": 6,
+    "width": 0,
+    "height": 0,
+    "passthru": false,
+    "label": "🗑️ Effacer l'enregistrement",
+    "tooltip": "",
+    "color": "",
+    "bgcolor": "",
+    "className": "",
+    "icon": "",
+    "payload": "clear",
+    "payloadType": "str",
+    "topic": "clear",
+    "topicType": "str",
+    "x": 180,
+    "y": 1040,
+    "wires": [
+      [
+        "rec_fn_clear"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "rec_fn_clear",
+    "type": "function",
+    "name": "Effacer",
+    "func": "let rec = global.get('rec') || { actif: false, lignes: [] };\nrec.lignes = [];\nglobal.set('rec', rec);\nreturn { payload: rec.actif ? '🔴 REC en cours (0 mesures)' : '⏹️ Arrêté (0 mesures)' };",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 1040,
+    "wires": [
+      [
+        "rec_txt"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "rec_inj",
+    "type": "inject",
+    "name": "État initial",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "1",
+    "topic": "",
+    "payload": "⏹️ Arrêté (0 mesures)",
+    "payloadType": "str",
+    "x": 170,
+    "y": 1100,
+    "wires": [
+      [
+        "rec_txt"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "rec_txt",
+    "type": "ui_text",
+    "group": "grp_pilotage",
+    "order": 4,
+    "width": 0,
+    "height": 0,
+    "name": "Enregistrement",
+    "label": "Enregistrement",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "className": "",
+    "style": false,
+    "font": "",
+    "fontSize": "",
+    "color": "#000000",
+    "x": 720,
+    "y": 980,
+    "wires": [],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "rec_toast",
+    "type": "ui_toast",
+    "position": "top right",
+    "displayTime": "3",
+    "highlight": "blue",
+    "sendall": true,
+    "outputs": 0,
+    "ok": "OK",
+    "cancel": "",
+    "raw": false,
+    "className": "",
+    "topic": "",
+    "name": "Popup REC",
+    "x": 710,
+    "y": 920,
+    "wires": [],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "rec_link",
+    "type": "ui_template",
+    "group": "grp_pilotage",
+    "name": "Lien CSV",
+    "order": 5,
+    "width": 0,
+    "height": 0,
+    "format": "<a href=\"/cardio.csv\" target=\"_blank\" style=\"font-weight:bold\">📥 Télécharger les mesures (CSV)</a>",
+    "storeOutMessages": true,
+    "fwdInMessages": true,
+    "resendOnRefresh": true,
+    "templateScope": "local",
+    "className": "",
+    "x": 720,
+    "y": 1040,
+    "wires": [
+      []
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "rec_http_in",
+    "type": "http in",
+    "name": "GET /cardio.csv",
+    "url": "/cardio.csv",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 160,
+    "y": 1160,
+    "wires": [
+      [
+        "rec_fn_csv"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "rec_fn_csv",
+    "type": "function",
+    "name": "Générer le CSV",
+    "func": "const rec = global.get('rec') || { lignes: [] };\nlet csv = 'date;bpm;spo2;seuil;code\\n';\ncsv += rec.lignes.map(l => [l.date, l.bpm, l.spo2, l.seuil, l.code].join(';')).join('\\n');\nmsg.payload = csv;\nmsg.headers = {\n    'Content-Type': 'text/csv; charset=utf-8',\n    'Content-Disposition': 'attachment; filename=\"cardio_enregistrement.csv\"'\n};\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 410,
+    "y": 1160,
+    "wires": [
+      [
+        "rec_http_out"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "rec_http_out",
+    "type": "http response",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 630,
+    "y": 1160,
+    "wires": [],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "son_comment",
+    "type": "comment",
+    "name": "SON D'ALARME : relier la sortie 2 (milieu) de « Logique d'alarme » à « Son alarme »",
+    "info": "",
+    "x": 380,
+    "y": 1240,
+    "wires": [],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "son_fn",
+    "type": "function",
+    "name": "Son alarme",
+    "func": "// Reçoit le texte d'état de l'alarme (sortie 2 de « Logique d'alarme »)\nconst t = String(msg.payload);\nconst on = t.startsWith('🚨');\nif (on === (context.get('on') || false)) return null;   // seulement au changement\ncontext.set('on', on);\n\nlet texte = t.replace('🚨', '').trim()\n             .replace('>', 'supérieur à')\n             .replace('BPM', 'fréquence cardiaque');\nreturn { payload: on ? 'on' : 'off', texte: texte };",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 330,
+    "y": 1300,
+    "wires": [
+      [
+        "son_tpl"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "son_tpl",
+    "type": "ui_template",
+    "group": "grp_alarme",
+    "name": "Sirène",
+    "order": 5,
+    "width": 0,
+    "height": 0,
+    "format": "<div style=\"text-align:center; width:100%\">\n  <md-button class=\"md-raised\" ng-click=\"activer()\"\n     ng-style=\"{'background-color': actif ? '#2e7d32' : '#c62828', 'color':'white'}\">\n     {{ actif ? '🔊 Son activé' : '🔇 Cliquer ici pour activer le son' }}\n  </md-button>\n</div>\n<script>\n(function(scope) {\n    var ctx = null, timer = null, aigu = true;\n    scope.actif = false;\n\n    // Le navigateur exige un clic avant de jouer du son\n    scope.activer = function() {\n        if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();\n        ctx.resume();\n        scope.actif = true;\n        bip();\n    };\n\n    function bip() {\n        if (!ctx) return;\n        var o = ctx.createOscillator(), g = ctx.createGain();\n        o.type = 'square';\n        o.frequency.value = aigu ? 880 : 660;   // sirène deux tons\n        aigu = !aigu;\n        g.gain.value = 0.15;\n        o.connect(g); g.connect(ctx.destination);\n        o.start(); o.stop(ctx.currentTime + 0.3);\n    }\n\n    function parler(texte) {\n        if (!('speechSynthesis' in window) || !texte) return;\n        var u = new SpeechSynthesisUtterance('Alerte. ' + texte);\n        u.lang = 'fr-FR';\n        window.speechSynthesis.speak(u);\n    }\n\n    scope.$watch('msg', function(msg) {\n        if (!msg) return;\n        if (msg.payload === 'on' && !timer) {\n            parler(msg.texte);\n            bip();\n            timer = setInterval(bip, 400);\n        }\n        if (msg.payload === 'off' && timer) {\n            clearInterval(timer); timer = null;\n            if ('speechSynthesis' in window) window.speechSynthesis.cancel();\n        }\n    });\n})(scope);\n</script>",
+    "storeOutMessages": true,
+    "fwdInMessages": true,
+    "resendOnRefresh": false,
+    "templateScope": "local",
+    "className": "",
+    "x": 540,
+    "y": 1300,
+    "wires": [
+      []
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "son_test_on",
+    "type": "inject",
+    "name": "TEST son ON",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "texte",
+        "v": "test du son d'alarme",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "on",
+    "payloadType": "str",
+    "x": 330,
+    "y": 1360,
+    "wires": [
+      [
+        "son_tpl"
+      ]
+    ],
+    "z": "tab_cardio"
+  },
+  {
+    "id": "son_test_off",
+    "type": "inject",
+    "name": "TEST son OFF",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "off",
+    "payloadType": "str",
+    "x": 330,
+    "y": 1400,
+    "wires": [
+      [
+        "son_tpl"
+      ]
+    ],
+    "z": "tab_cardio"
+  }
+]
